@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react'
 import axios from 'axios'
 import { toast } from 'react-toastify';
+import PuffLoader from "react-spinners/PuffLoader";
 
 import WeatherDetails from '../components/weather_details';
 import MainInfo from '../components/main_info';
 
 const WTHR = (props) => {
+  const [loading, setLoading] = useState(true);
   const [data, setData] = useState({})
   const [location, setLocation] = useState('Madrid')
   const [background, setBackground] = useState({daytime: null, weather: null })
@@ -42,13 +44,18 @@ const WTHR = (props) => {
 
   const searchLocation = (event) => {
     if (event.key === 'Enter') {
+      setLoading(true);
+      
       axios.get(url).then((response) => {
         setData(response.data)
-        setBgImage(response.data)
+        setBgImage(response.data) 
       }).catch((error) => {
         toast(`Oops! Looks like that place doesn't exist. Try again with another place`);
       });
       
+      setTimeout(() => {
+        setLoading(false);
+      }, 2000)
       setLocation('')
     }
   }
@@ -58,41 +65,48 @@ const WTHR = (props) => {
   }, []);
 
   return (
-    <>
-      <img src={background.weather && background.daytime && bg_image} className={`w-full h-screen fixed bg-center bg-no-repeat bg-cover z-10 animate__animated animate__fadeIn`}/>
-      <div className="relative w-full h-screen bg-black/50 z-20 animate__animated animate__fadeIn">
-        <h3 className="float-left top-10 left-14 absolute text-2xl text-white/90 font-bold tracking-[0.35rem] animate__animated animate__fadeIn delay-1">wthr_now.</h3>
-        <div className="flex flex-col gap-y-12 w-[25%] h-screen bg-[#ffffff]/10 border border-[#ffffff]/10 shadow-lg backdrop-blur-md float-right py-6 px-10 animate__animated animate__fadeIn delay-3">
-          <input
-            value={location}
-            onChange={event => setLocation(event.target.value)}
-            onKeyPress={searchLocation}
-            placeholder='Enter location...'
-            type="text" 
-            className="w-full bg-[#ffffff]/0 outline-0 border-b border-b-[#ffffff]/50 text-lg font-medium text-white py-3 px-5 input"
-          />
-          {data.main ? 
-            <WeatherDetails 
-              data={[
-                { label: 'Feels Like', value: `${data.main.feels_like.toFixed()}°` },
-                { label: 'Min/Max Temp', value: `${data.main.temp_min.toFixed()}° - ${data.main.temp_max.toFixed()}°` },
-                { label: 'Humidity', value: `${data.main.humidity}%` },
-                { label: 'Wind', value: `${data.wind.speed.toFixed()}km/h` },
-                { label: 'Cloudiness', value: `${data.clouds.all.toFixed()}%` }
-              ]}
+    loading ? 
+      <div className="w-screen h-screen relative">
+        <div className="absolute top-[50%] left-[50%] translate-x-[-50%] translate-y-[-50%]">
+          <PuffLoader color="#E0E0E0" loading={loading} size={100} aria-label="Loading Spinner" data-testid="loader"/>
+        </div>
+      </div>
+    :
+      <>
+        <img src={background.weather && background.daytime && bg_image} className={`w-full h-screen fixed bg-center bg-no-repeat bg-cover z-10 animate__animated animate__fadeIn`}/>
+        <div className="relative w-full h-screen bg-black/50 z-20 animate__animated animate__fadeIn">
+          <h3 className="float-left top-10 left-14 absolute text-2xl text-white/90 font-bold tracking-[0.35rem] animate__animated animate__fadeIn delay-1">wthr_now.</h3>
+          <div className="flex flex-col gap-y-12 w-[25%] h-screen bg-[#ffffff]/10 border border-[#ffffff]/10 shadow-lg backdrop-blur-md float-right py-6 px-10 animate__animated animate__fadeIn delay-3">
+            <input
+              value={location}
+              onChange={event => setLocation(event.target.value)}
+              onKeyPress={searchLocation}
+              placeholder='Enter location...'
+              type="text" 
+              className="w-full bg-[#ffffff]/0 outline-0 border-b border-b-[#ffffff]/50 text-lg font-medium text-white py-3 px-5 input"
+            />
+            {data.main ? 
+              <WeatherDetails 
+                data={[
+                  { label: 'Feels Like', value: `${data.main.feels_like.toFixed()}°` },
+                  { label: 'Min/Max Temp', value: `${data.main.temp_min.toFixed()}° - ${data.main.temp_max.toFixed()}°` },
+                  { label: 'Humidity', value: `${data.main.humidity}%` },
+                  { label: 'Wind', value: `${data.wind.speed.toFixed()}km/h` },
+                  { label: 'Cloudiness', value: `${data.clouds.all.toFixed()}%` }
+                ]}
+              />
+            : null}
+          </div>
+          {data.main && data.weather ? 
+            <MainInfo
+              temp={`${data.main.temp.toFixed()}°`}
+              location={data.name}
+              icon={data.weather[0].icon}
+              weather={data.weather[0].main}
             />
           : null}
         </div>
-        {data.main && data.weather ? 
-          <MainInfo
-            temp={`${data.main.temp.toFixed()}°`}
-            location={data.name}
-            icon={data.weather[0].icon}
-            weather={data.weather[0].main}
-          />
-        : null}
-      </div>
-    </>
+      </>
   );
 }
 
